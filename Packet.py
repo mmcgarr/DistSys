@@ -26,9 +26,9 @@ class Packet:
 			self.sender_id = sender_id
 
 
-	def send(self, sock):
+	def send(self, sock, ip):
 		print "sending"
-		sock.sendto(json.dumps(self.__dict__), ("127.0.0.1", 8767)) 
+		sock.sendto(json.dumps(self.__dict__), (ip, 8767)) 
 
 class SearchResult:
 	pass
