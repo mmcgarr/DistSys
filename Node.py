@@ -21,8 +21,9 @@ class Node:
 		self.sendSock = socket(AF_INET, SOCK_DGRAM)
 		self.recieve()
 		print "done with receiving"
-		#self.join()
-		self.index()
+		self.join()
+		#self.index()
+		self.leaving()
 		
 	def join(self):
 		print 'joining'
@@ -34,6 +35,14 @@ class Node:
 		p = Packet('INDEX', target_id=self.node_id, sender_id=self.node_id, keyword="Abba", link="domain.com")
 		p.send(self.sendSock, "127.0.0.1")
 
+	def leaving(self):
+		print 'leaving network'
+		p = Packet('LEAVING_NETWORK', node_id=8)
+		for _,ip in self.routing_table:
+			print ip
+			p.send(self.sendSock, ip)
+
+
 	def leave(self):
 		pass
 
@@ -41,37 +50,45 @@ class Node:
 		hash = 0
 		for c in str:
 			hash = hash *31 + ord(c)
-
 		return math.fabs(hash)
 
 	def listenAndRespond(self):
 		s = socket(AF_INET, SOCK_DGRAM)
 		s.bind((HOST,PORT))
 		addr = (HOST,PORT)
-#		while True:
-		data, addr = s.recvfrom(1024)
-		print data
-		packet = json.loads(data)
-		if packet["type"] == "JOINING_NETWORK_SIMPLIFIED":
-			print "Add node to routing table"
-			self.routing_table.append((packet["node_id"], packet["from_ip"]))
-			print self.routing_table
-			if self.node_id != packet["target_id"]:
-				closest_id, closest_ip = self.findClosestNode(packet["target_id"])
-				print closest_id
-				Packet("JOINING_NETWORK_SIMPLIFIED", node_id=packet["node_id"], target_id=packet["target_id"], from_ip="127.0.0.1").send(self.sendSock, closest_ip)
-				print 'sending packet on to ' + closest_ip 
-		elif packet["type"] == "INDEX": 
-			print "Adding index"
-			if packet["target_id"] == self.node_id:
-				print "actually adding to this node's links"
-				self.url.append(packet["link"])
-				print self.url
-			else:
-				_, closest_ip = findClosestNode(packet['target_id'])
-				Packet("INDEX", node_id=packet["sender_id"], target_id=packet["target_id"], keyword=packet["keyword"], link=packet['link']).send(self.sendSock, closest_ip)
-		print "**************************************************************"
+		while True:
+			data, addr = s.recvfrom(1024)
+			print data
+			packet = json.loads(data)
+			if packet["type"] == "JOINING_NETWORK_SIMPLIFIED":
+				print "Add node to routing table"
+				self.routing_table.append((packet["node_id"], packet["from_ip"]))
+				print self.routing_table
+				if self.node_id != packet["target_id"]:
+					closest_id, closest_ip = self.findClosestNode(packet["target_id"])
+					print closest_id
+					Packet("JOINING_NETWORK_SIMPLIFIED", node_id=packet["node_id"], target_id=packet["target_id"], from_ip="127.0.0.1").send(self.sendSock, closest_ip)
+					print 'sending packet on to ' + closest_ip 
+			elif packet["type"] == "INDEX": 
+				print "Adding index"
+				if packet["target_id"] == self.node_id:
+					print "actually adding to this node's links"
+					self.url.append(packet["link"])
+					print self.url
+				else:
+					_, closest_ip = findClosestNode(packet['target_id'])
+					Packet("INDEX", node_id=packet["sender_id"], target_id=packet["target_id"], keyword=packet["keyword"], link=packet['link']).send(self.sendSock, closest_ip)
+			elif packet["type"] == "LEAVING_NETWORK": 
+				print "received a leaving packet"
+				print "current routing table"
+				print self.routing_table
 
+				for id,ip in self.routing_table:
+					if id == packet["node_id"]:
+						self.routing_table.remove((id, ip))
+						break
+				print self.routing_table
+		print "**************************************************************"
 
 	def findClosestNode(self, target_id):
 		print 'finding closest'
@@ -84,19 +101,15 @@ class Node:
 		if self.node_id > max and self.node_id < target_id:
 			max = self.node_id
 			closest_ip = "127.0.0.1"
-
 		return (max, closest_ip)
-		
 
 	def recieve(self):
 		t = threading.Thread(target = self.listenAndRespond)
 		#t.daemon = True
 		t.start()
 
-
 def main():
 	Node(7, "7.7.7.7")
-
 
 if __name__ == "__main__":
 	main()

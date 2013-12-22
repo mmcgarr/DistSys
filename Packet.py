@@ -19,7 +19,7 @@ class Packet:
 			self.node_id = node_id
 			self.ip_address = from_ip
 			self.table = route_table
-		elif type == "LEAVING NETWORK":
+		elif type == "LEAVING_NETWORK":
 			self.node_id = node_id
 		elif type == "INDEX":
 			self.target_id = target_id
