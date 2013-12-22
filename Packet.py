@@ -3,7 +3,7 @@ import json
 
 class Packet:
 
-	def __init__(self, type, node_id=None, from_ip = None, to_ip = None, gateway_id = None, route_table = None, target_id = None):
+	def __init__(self, type, node_id=None, from_ip = None, to_ip = None, gateway_id = None, route_table = None, target_id = None, link = None, keyword = None, sender_id = None):
 		self.type = type
 
 		if type == "JOINING_NETWORK_SIMPLIFIED":
@@ -24,6 +24,8 @@ class Packet:
 		elif type == "INDEX":
 			self.target_id = target_id
 			self.sender_id = sender_id
+			self.keyword = keyword
+			self.link = link
 
 
 	def send(self, sock, ip):
