@@ -22,8 +22,8 @@ class Node:
 		self.recieve()
 		print "done with receiving"
 		self.join()
-		#self.index()
-		self.leaving()
+		self.index()
+		self.leave()
 		
 	def join(self):
 		print 'joining'
@@ -32,19 +32,15 @@ class Node:
 
 	def index(self):
 		print 'indexing'
-		p = Packet('INDEX', target_id=self.node_id, sender_id=self.node_id, keyword="Abba", link="domain.com")
+		p = Packet('INDEX', target_id=self.node_id, sender_id=self.node_id, keyword="Abba", link=["domain.com"])
 		p.send(self.sendSock, "127.0.0.1")
 
-	def leaving(self):
+	def leave(self):
 		print 'leaving network'
 		p = Packet('LEAVING_NETWORK', node_id=8)
 		for _,ip in self.routing_table:
 			print ip
 			p.send(self.sendSock, ip)
-
-
-	def leave(self):
-		pass
 
 	def hashCode(self, str):
 		hash = 0
@@ -67,8 +63,12 @@ class Node:
 				if self.node_id != packet["target_id"]:
 					closest_id, closest_ip = self.findClosestNode(packet["target_id"])
 					print closest_id
-					Packet("JOINING_NETWORK_SIMPLIFIED", node_id=packet["node_id"], target_id=packet["target_id"], from_ip="127.0.0.1").send(self.sendSock, closest_ip)
+					Packet("JOINING_NETWORK_RELAY_SIMPLIFIED", node_id=packet["node_id"], target_id=packet["target_id"], gateway_id=self.node_id).send(self.sendSock, closest_ip)
 					print 'sending packet on to ' + closest_ip 
+			elif packet["type"] == "JOINING_NETWORK_RELAY_SIMPLIFIED":
+				p = Packet("ROUTING_INFO", gateway_id = packet["gateway_id"], node_id = packet["node_id"], from_ip = self.ip, route_table = self.routing_table) 
+				_, closest_ip = findClosestNode(packet["gateway_id"])
+				p.send(self.sendSock, closest_ip)
 			elif packet["type"] == "INDEX": 
 				print "Adding index"
 				if packet["target_id"] == self.node_id:
