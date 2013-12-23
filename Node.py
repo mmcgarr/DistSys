@@ -78,6 +78,19 @@ class Node:
 				else:
 					_, closest_ip = findClosestNode(packet['target_id'])
 					Packet("INDEX", node_id=packet["sender_id"], target_id=packet["target_id"], keyword=packet["keyword"], link=packet['link']).send(self.sendSock, closest_ip)
+			elif packet["type"] == "ROUTING_INFO":
+				if self.node_id == packet["gateway_id"]:
+					_, closest_ip = findClosestNode(packet["node_id"])
+					p = Packet("ROUTING_INFO", gateway_id = packet["gateway_id"], node_id= packet["node_id"], from_ip = packet["from_ip"], route_table=packet["route_table"])					
+					p.send(self.sendSock, closest_ip)
+				elif self.node_id == packet["target_id"]:
+					self.routing_table.append(packet["route_table"])
+				else:
+					_, closest_ip = findClosestNode(packet["gateway_id"])
+					p = Packet("ROUTING_INFO", gateway_id = packet["gateway_id"],  node_id=packet["node_id"], from_ip=packet["from_ip"], route_table=packet["route_table"])
+					p.send(self.sendSock, closest_ip)
+
+
 			elif packet["type"] == "LEAVING_NETWORK": 
 				print "received a leaving packet"
 				print "current routing table"
@@ -86,9 +99,8 @@ class Node:
 				for id,ip in self.routing_table:
 					if id == packet["node_id"]:
 						self.routing_table.remove((id, ip))
-						break
 				print self.routing_table
-		print "**************************************************************"
+
 
 	def findClosestNode(self, target_id):
 		print 'finding closest'
