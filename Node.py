@@ -11,10 +11,13 @@ PORT = 8767
 MESSAGE = "OMG HI"
 
 class Node:
-	def __init__(self, node_id, ip_addr):
-		self.node_id = node_id
+	def __init__(self, word, ip_addr):
 		self.routing_table = ([(1, "1.1.1.1"), (2, "2.2.2.2"), (5, "5.5.5.5"), (8, "8.8.8.8")])
 		self.url = ([])
+		self.word = word
+
+		self.node_id = self.hashCode(word)
+		print 'my id is : ' + str(self.node_id)
 
 		self.ip = ip_addr
 		
@@ -41,6 +44,13 @@ class Node:
 		for _,ip in self.routing_table:
 			print ip
 			p.send(self.sendSock, ip)
+
+	def search(self, word):
+		print 'searching'
+		target_id, target_ip = findClosestNode(hashCode(word))
+		p = Packet("SEARCH", word=word, node_id=target_id, sender_id=self.node_id)
+		p.send(self.sendSock, target_ip)
+
 
 	def hashCode(self, str):
 		hash = 0
@@ -90,6 +100,26 @@ class Node:
 					p = Packet("ROUTING_INFO", gateway_id = packet["gateway_id"],  node_id=packet["node_id"], from_ip=packet["from_ip"], route_table=packet["route_table"])
 					p.send(self.sendSock, closest_ip)
 
+			elif packet["type"] == "SEARCH":
+				print 'received SEARCH packet'
+				if packet['node_id'] == self.node_id:
+					_, closest_ip = findClosestNode(packet["sender_id"])
+					p =Packet("SERACH_RESPONSE", word=packet["word"], node_id=packet["sender_id"], sender_id=self.node_id, response=self.url)
+					p.send(self.sendSock, closest_ip) 
+				else:
+					_, closest_ip = findClosestNode(packet["node_id"])
+					p = Packet("SEARCH", word = packet["word"], sender_id = packet["sender_id"], node_id=packet["node_id"])
+					p.send(self.sendSock, closest_ip)
+
+			elif packet["type"] == "SEARCH_RESPONSE":
+				if packet["target_id"] == self.node_id:
+					print 'Search Results: '
+					for result in packet['response']:
+						print result
+				else:
+					_, closest_ip = findClosestNode(packet["node_id"])
+					p = Packet("SEARCH_RESPONSE", word=packet["word"], node_id= packet["node_id"], sender_id = packet["sender_id"], response=packet['response'])
+					p.send(self.sendSock, closest_ip)
 
 			elif packet["type"] == "LEAVING_NETWORK": 
 				print "received a leaving packet"
@@ -99,6 +129,7 @@ class Node:
 				for id,ip in self.routing_table:
 					if id == packet["node_id"]:
 						self.routing_table.remove((id, ip))
+				print 'new routing table'
 				print self.routing_table
 
 
@@ -112,7 +143,7 @@ class Node:
 				closest_ip = ip
 		if self.node_id > max and self.node_id < target_id:
 			max = self.node_id
-			closest_ip = "127.0.0.1"
+			closest_ip = self.ip 
 		return (max, closest_ip)
 
 	def recieve(self):
@@ -121,7 +152,7 @@ class Node:
 		t.start()
 
 def main():
-	Node(7, "7.7.7.7")
+	Node("abba", "7.7.7.7")
 
 if __name__ == "__main__":
 	main()

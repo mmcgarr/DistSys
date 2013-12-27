@@ -3,7 +3,7 @@ import json
 
 class Packet:
 
-	def __init__(self, type, node_id=None, from_ip = None, to_ip = None, gateway_id = None, route_table = None, target_id = None, link = None, keyword = None, sender_id = None):
+	def __init__(self, type, node_id=None, from_ip = None, to_ip = None, gateway_id = None, route_table = None, target_id = None, link = None, keyword = None, sender_id = None, response = None, word = None):
 		self.type = type
 
 		if type == "JOINING_NETWORK_SIMPLIFIED":
@@ -26,13 +26,17 @@ class Packet:
 			self.sender_id = sender_id
 			self.keyword = keyword
 			self.link = link
-
+		elif type == "SEARCH":
+			self.word = word
+			self.node_id = node_id
+			self.sender_id = sender_id
+		elif type == "SEARCH_RESPONSE":
+			self.word = word
+			self.node_id = node_id
+			self.sender_id = sender_id
+			self.response = response
 
 	def send(self, sock, ip):
 		print "sending"
 		sock.sendto(json.dumps(self.__dict__), (ip, 8767)) 
-
-class SearchResult:
-	pass
-
 
